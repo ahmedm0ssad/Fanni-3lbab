@@ -1,11 +1,10 @@
 from .booking import Booking
-from .order_history import order_history
+from .order_history import OrderHistory
+from .favorite import Favorite
+from .notification import Notification
+from .password_recovery import PasswordRecovery
+from .portfolio import Portfolio
+from .rating import RatingAndReview
 from .service import Service
-from .rating import rating
 from .user import User
-from .favorite import favorite
-from .notification import notification
-from .password_recovery import password_recovery
-from .portfolio import portfolio
-
-
+from .user import Admin

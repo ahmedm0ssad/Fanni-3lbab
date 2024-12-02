@@ -31,11 +31,3 @@ def read_users():
     limit = int(request.args.get('limit', 10))
     users = get_users(db, skip=skip, limit=limit)
     return jsonify(users), 200
-
-@user_bp.route('/users/<int:user_id>', methods=['GET'])
-def read_user(user_id):
-    db = next(get_db())
-    db_user = get_user(db, user_id=user_id)
-    if db_user is None:
-        return jsonify({"detail": "User not found"}), 404
-    return jsonify(db_user), 200
