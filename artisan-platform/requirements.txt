@@ -10,3 +10,4 @@ jose
 passlib
 pydantic-settings
 flask_sqlalchemy
+mysql-connector-python
