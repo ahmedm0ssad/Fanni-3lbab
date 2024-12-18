@@ -1,70 +1,88 @@
-import sys
-import os
-
+import mysql.connector
 from flask import Flask, request, jsonify
-from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import Column, Integer, String
 
 app = Flask(__name__)
 
 # Update with your MySQL database configuration
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+mysqlconnector://Rana:Rana-555@localhost/Fanni_3lbab'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+db_config = {
+    'user': 'Rana',
+    'password': 'Rana-555',
+    'host': 'localhost',
+    'database': 'Fanni_3lbab'
+}
 
-db = SQLAlchemy(app)
-
-# Define the User model
-class User(db.Model):
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    email = Column(String(120), unique=True, nullable=False)
-    password = Column(String(120), nullable=False)
-
-# Define the UserCreate schema
-class UserCreate:
-    def __init__(self, email, password):
-        self.email = email
-        self.password = password
-
-# Define the functions to interact with the database
-def create_user(db_session, user):
-    new_user = User(email=user.email, password=user.password)
-    db_session.add(new_user)
-    db_session.commit()
-    return new_user
-
-def get_user_by_email(db_session, email):
-    return db_session.query(User).filter(User.email == email).first()
-
-def get_users(db_session, skip=0, limit=10):
-    return db_session.query(User).offset(skip).limit(limit).all()
-
-def get_user_by_id(db_session, user_id):
-    return db_session.query(User).filter(User.id == user_id).first()
-
-# Define Routes
-@app.route('/users', methods=['POST'])
-def create_new_user():
-    user_data = request.get_json()
-    user = UserCreate(**user_data)
-    db_user = get_user_by_email(db.session, email=user.email)
-    if db_user:
-        return jsonify({"detail": "Email already registered"}), 400
-    new_user = create_user(db.session, user=user)
-    return jsonify(new_user), 201
+@app.route('/test_db_connection', methods=['GET'])
+def test_db_connection():
+    try:
+        connection = mysql.connector.connect(**db_config)
+        cursor = connection.cursor()
+        cursor.execute("SELECT DATABASE();")
+        db_name = cursor.fetchone()
+        cursor.close()
+        connection.close()
+        return jsonify({"detail": f"Connected to database: {db_name[0]}"}), 200
+    except mysql.connector.Error as err:
+        return jsonify({"detail": f"Error: {err}"}), 500
 
 @app.route('/users', methods=['GET'])
 def read_users():
     skip = int(request.args.get('skip', 0))
     limit = int(request.args.get('limit', 10))
-    users = get_users(db.session, skip=skip, limit=limit)
-    return jsonify(users), 200
+
+    try:
+        connection = mysql.connector.connect(**db_config)
+        cursor = connection.cursor(dictionary=True)
+        cursor.execute("SELECT * FROM users LIMIT %s OFFSET %s", (limit, skip))
+        users = cursor.fetchall()
+        cursor.close()
+        connection.close()
+        return jsonify(users), 200
+    except mysql.connector.Error as err:
+        return jsonify({"detail": f"Error: {err}"}), 500
+
+@app.route('/users', methods=['POST'])
+def create_user():
+    user_data = request.json
+    try:
+        connection = mysql.connector.connect(**db_config)
+        cursor = connection.cursor()
+        cursor.execute(
+            """
+            INSERT INTO users (address, created_at, email, name, password_hash, phone, updated_at, user_type)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            """,
+            (
+                user_data['address'],
+                user_data['created_at'],
+                user_data['email'],
+                user_data['name'],
+                user_data['password_hash'],
+                user_data['phone'],
+                user_data['updated_at'],
+                user_data['user_type']
+            )
+        )
+        connection.commit()
+        cursor.close()
+        connection.close()
+        return jsonify({"detail": "User created successfully"}), 201
+    except mysql.connector.Error as err:
+        return jsonify({"detail": f"Error: {err}"}), 500
 
 @app.route('/users/<int:user_id>', methods=['GET'])
 def read_user(user_id):
-    user = get_user_by_id(db.session, user_id=user_id)
-    if user is None:
-        return jsonify({"detail": "User not found"}), 404
-    return jsonify(user), 200
+    try:
+        connection = mysql.connector.connect(**db_config)
+        cursor = connection.cursor(dictionary=True)
+        cursor.execute("SELECT * FROM users WHERE user_id = %s", (user_id,))
+        user = cursor.fetchone()
+        cursor.close()
+        connection.close()
+        if user is None:
+            return jsonify({"detail": "User not found"}), 404
+        return jsonify(user), 200
+    except mysql.connector.Error as err:
+        return jsonify({"detail": f"Error: {err}"}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)
