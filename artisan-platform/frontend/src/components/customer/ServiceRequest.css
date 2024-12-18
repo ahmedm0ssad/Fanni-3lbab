@@ -1,0 +1,40 @@
+.service-request-container {
+  max-width: 600px;
+  margin: 50px auto;
+  padding: 20px;
+  background-color: white;
+  border-radius: 10px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.service-request-container h1 {
+  text-align: center;
+  color: #6a0dad;
+}
+
+.service-request-container form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.service-request-container input,
+.service-request-container textarea {
+  padding: 10px;
+  font-size: 16px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+
+.service-request-container button {
+  padding: 10px;
+  background-color: #6a0dad;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.service-request-container button:hover {
+  background-color: #5b0ca6;
+}
