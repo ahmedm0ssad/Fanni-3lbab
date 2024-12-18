@@ -1,80 +1,32 @@
-from flask import Blueprint, Flask, request, jsonify
+import sys
+import os
 
-# Create a blueprint
-user_bp = Blueprint('user_bp', __name__)
+# Set the PYTHONPATH to the root of your project directory
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..', '..'))
+sys.path.append(project_root)
 
-# Mock Schema and Database Session
-class UserCreate:
-    def __init__(self, name, email, password_hash, phone=None, address=None, user_type=None):
-        self.name = name
-        self.email = email
-        self.password_hash = password_hash
-        self.phone = phone
-        self.address = address
-        self.user_type = user_type
+from flask import Flask, request, jsonify
+from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy import create_engine
+from app.models.user import UserCreate, create_user, get_user_by_email, get_users, get_user_by_id
+from app.routes.user_routes import user_bp
 
-# Mock Functions
-def create_user(db, user):
-    return {
-        "user_id": 1,
-        "name": user.name,
-        "email": user.email,
-        "phone": user.phone,
-        "address": user.address,
-        "user_type": user.user_type,
-        "created_at": "2024-12-01T15:30:00",
-        "updated_at": "2024-12-01T15:30:00",
-    }
+app = Flask(__name__)
 
-def get_users(db, skip, limit):
-    return [
-        {
-            "user_id": 1,
-            "name": "John Doe",
-            "email": "john.doe@example.com",
-            "phone": "1234567890",
-            "address": "123 Main St",
-            "user_type": "customer",
-            "created_at": "2024-12-01T15:30:00",
-            "updated_at": "2024-12-01T15:30:00",
-        }
-    ]
+# Update with your MySQL database configuration
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+mysqlconnector://Rana:Rana-555@localhost/Fanni_3lbab'  
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-def get_user(db, user_id):
-    if user_id == 1:
-        return {
-            "user_id": 1,
-            "name": "John Doe",
-            "email": "john.doe@example.com",
-            "phone": "1234567890",
-            "address": "123 Main St",
-            "user_type": "customer",
-            "created_at": "2024-12-01T15:30:00",
-            "updated_at": "2024-12-01T15:30:00",
-        }
-    return None
-
-def get_user_by_email(db, email):
-    if email == "john.doe@example.com":
-        return {
-            "user_id": 1,
-            "name": "John Doe",
-            "email": "john.doe@example.com",
-            "phone": "1234567890",
-            "address": "123 Main St",
-            "user_type": "customer",
-            "created_at": "2024-12-01T15:30:00",
-            "updated_at": "2024-12-01T15:30:00",
-        }
-    return None
-
-# Mock Database Session
-class MockDB:
-    pass
+db = SQLAlchemy(app)
+Session = sessionmaker(bind=db.engine)
 
 def get_db():
-    db = MockDB()
-    yield db
+    db = Session()
+    try:
+        yield db
+    finally:
+        db.close()
 
 # Define Routes
 @user_bp.route('/users', methods=['POST'])
@@ -99,17 +51,10 @@ def read_users():
 @user_bp.route('/users/<int:user_id>', methods=['GET'])
 def read_user(user_id):
     db = next(get_db())
-    db_user = get_user(db, user_id=user_id)
-    if db_user is None:
+    user = get_user_by_id(db, user_id=user_id)
+    if user is None:
         return jsonify({"detail": "User not found"}), 404
-    return jsonify(db_user), 200
-
-# Create a standalone test app
-def create_test_app():
-    app = Flask(__name__)
-    app.register_blueprint(user_bp)
-    return app
+    return jsonify(user), 200
 
 if __name__ == '__main__':
-    app = create_test_app()
     app.run(debug=True)

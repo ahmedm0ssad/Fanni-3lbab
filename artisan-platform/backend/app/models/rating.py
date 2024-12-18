@@ -29,3 +29,14 @@ class RatingAndReview(Base):
     # Define relationships
     customer = relationship("User", back_populates="reviews", foreign_keys=[customer_id])
     artisan = relationship("User", foreign_keys=[artisan_id])
+
+    def to_dict(self):
+        return {
+            "review_id": self.review_id,
+            "customer_id": self.customer_id,
+            "artisan_id": self.artisan_id,
+            "rating":self.rating,
+            "review": self.review,
+            "created_at":self.created_at,
+        }
+

@@ -39,6 +39,23 @@ class User(Base):
     notifications = relationship("Notification", back_populates="user")
     password_recovery = relationship("PasswordRecovery", back_populates="user")
 
+    def to_dict(self):
+        return {
+            "id": self.user_id,
+            "name": self.name,
+            "email": self.email,
+            "password_hash":self.password_hash,
+            "phone": self.phone,
+            "address": self.address,
+            "user_type": self.user_type,
+            "created_at":self.created_at,
+            "updated_at":self.updated_at,
+
+        }
+
+
+    
+
 class Admin(User):
     """
     Admin class represents an admin user in the system.
@@ -51,3 +68,10 @@ class Admin(User):
 
     admin_id = Column(Integer, ForeignKey('users.user_id'), primary_key=True)
     # Inherits other fields from User
+
+    def to_dict(self):
+            return {
+                "admin_id": self.admin_id,
+            
+            }
+

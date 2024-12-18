@@ -33,3 +33,16 @@ class Service(Base):
     # Define relationships
     artisan = relationship("User", back_populates="services")
     bookings = relationship("Booking", back_populates="service")
+
+    def to_dict(self):
+        return {
+            "service_id": self.service_id,
+            "artisan_id": self.artisan_id,
+            "service_name": self.service_name,
+            "description":self.description,
+            "price": self.price,
+            "category": self.category,
+            "created_at":self.created_at,
+            "updated_at":self.updated_at,
+
+        }
