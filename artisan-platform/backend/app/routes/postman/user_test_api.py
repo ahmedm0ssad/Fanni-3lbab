@@ -1,57 +1,67 @@
 import sys
 import os
 
-# Set the PYTHONPATH to the root of your project directory
-project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..', '..'))
-sys.path.append(project_root)
-
 from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy import create_engine
-from app.models.user import UserCreate, create_user, get_user_by_email, get_users, get_user_by_id
-from app.routes.user_routes import user_bp
+from sqlalchemy import Column, Integer, String
 
 app = Flask(__name__)
 
 # Update with your MySQL database configuration
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+mysqlconnector://Rana:Rana-555@localhost/Fanni_3lbab'  
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+mysqlconnector://Rana:Rana-555@localhost/Fanni_3lbab'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
-Session = sessionmaker(bind=db.engine)
 
-def get_db():
-    db = Session()
-    try:
-        yield db
-    finally:
-        db.close()
+# Define the User model
+class User(db.Model):
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    email = Column(String(120), unique=True, nullable=False)
+    password = Column(String(120), nullable=False)
+
+# Define the UserCreate schema
+class UserCreate:
+    def __init__(self, email, password):
+        self.email = email
+        self.password = password
+
+# Define the functions to interact with the database
+def create_user(db_session, user):
+    new_user = User(email=user.email, password=user.password)
+    db_session.add(new_user)
+    db_session.commit()
+    return new_user
+
+def get_user_by_email(db_session, email):
+    return db_session.query(User).filter(User.email == email).first()
+
+def get_users(db_session, skip=0, limit=10):
+    return db_session.query(User).offset(skip).limit(limit).all()
+
+def get_user_by_id(db_session, user_id):
+    return db_session.query(User).filter(User.id == user_id).first()
 
 # Define Routes
-@user_bp.route('/users', methods=['POST'])
+@app.route('/users', methods=['POST'])
 def create_new_user():
-    db = next(get_db())
     user_data = request.get_json()
     user = UserCreate(**user_data)
-    db_user = get_user_by_email(db, email=user.email)
+    db_user = get_user_by_email(db.session, email=user.email)
     if db_user:
         return jsonify({"detail": "Email already registered"}), 400
-    new_user = create_user(db=db, user=user)
+    new_user = create_user(db.session, user=user)
     return jsonify(new_user), 201
 
-@user_bp.route('/users', methods=['GET'])
+@app.route('/users', methods=['GET'])
 def read_users():
-    db = next(get_db())
     skip = int(request.args.get('skip', 0))
     limit = int(request.args.get('limit', 10))
-    users = get_users(db, skip=skip, limit=limit)
+    users = get_users(db.session, skip=skip, limit=limit)
     return jsonify(users), 200
 
-@user_bp.route('/users/<int:user_id>', methods=['GET'])
+@app.route('/users/<int:user_id>', methods=['GET'])
 def read_user(user_id):
-    db = next(get_db())
-    user = get_user_by_id(db, user_id=user_id)
+    user = get_user_by_id(db.session, user_id=user_id)
     if user is None:
         return jsonify({"detail": "User not found"}), 404
     return jsonify(user), 200
