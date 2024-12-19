@@ -1,86 +1,78 @@
+import mysql.connector
 from flask import Blueprint, Flask, request, jsonify
+from datetime import datetime
 
 # Create a blueprint
 notification_bp = Blueprint('notification_bp', __name__)
 
-# Mock Schema and Database Session
-class NotificationCreate:
-    def __init__(self, user_id, message, is_read=False):
-        self.user_id = user_id
-        self.message = message
-        self.is_read = is_read
-
-# Mock Functions
-def create_notification(db, notification):
-    return {
-        "notification_id": 1,
-        "user_id": notification.user_id,
-        "message": notification.message,
-        "is_read": notification.is_read,
-        "created_at": "2024-12-01T15:30:00",
-    }
-
-def get_notifications(db, skip, limit):
-    return [
-        {
-            "notification_id": 1,
-            "user_id": 1,
-            "message": "Test notification",
-            "is_read": False,
-            "created_at": "2024-12-01T15:30:00",
-        }
-    ]
-
-def get_notification(db, notification_id):
-    if notification_id == 1:
-        return {
-            "notification_id": 1,
-            "user_id": 1,
-            "message": "Test notification",
-            "is_read": False,
-            "created_at": "2024-12-01T15:30:00",
-        }
-    return None
-
-# Mock Database Session
-class MockDB:
-    pass
-
-def get_db():
-    db = MockDB()
-    yield db
+# Update with your MySQL database configuration
+db_config = {
+    'user': 'Rana',
+    'password': 'Rana-555',
+    'host': 'localhost',
+    'database': 'Fanni_3lbab'
+}
 
 # Define Routes
 @notification_bp.route('/notifications', methods=['POST'])
-def create_new_notification():
-    db = next(get_db())
-    notification_data = request.get_json()
-    notification = NotificationCreate(**notification_data)
-    new_notification = create_notification(db=db, notification=notification)
-    return jsonify(new_notification), 201
+def create_notification():
+    notification_data = request.json
+    try:
+        connection = mysql.connector.connect(**db_config)
+        cursor = connection.cursor()
+        cursor.execute(
+            """
+            INSERT INTO notifications (user_id, message, is_read, created_at)
+            VALUES (%s, %s, %s, %s)
+            """,
+            (
+                notification_data['user_id'],
+                notification_data['message'],
+                notification_data.get('is_read', False),
+                datetime.utcnow()  # Use current timestamp for created_at
+            )
+        )
+        connection.commit()
+        cursor.close()
+        connection.close()
+        return jsonify({"detail": "Notification created successfully"}), 201
+    except mysql.connector.Error as err:
+        return jsonify({"detail": f"Error: {err}"}), 500
 
 @notification_bp.route('/notifications', methods=['GET'])
 def read_notifications():
-    db = next(get_db())
     skip = int(request.args.get('skip', 0))
     limit = int(request.args.get('limit', 10))
-    notifications = get_notifications(db, skip=skip, limit=limit)
-    return jsonify(notifications), 200
+
+    try:
+        connection = mysql.connector.connect(**db_config)
+        cursor = connection.cursor(dictionary=True)
+        cursor.execute("SELECT * FROM notifications LIMIT %s OFFSET %s", (limit, skip))
+        notifications = cursor.fetchall()
+        cursor.close()
+        connection.close()
+        return jsonify(notifications), 200
+    except mysql.connector.Error as err:
+        return jsonify({"detail": f"Error: {err}"}), 500
 
 @notification_bp.route('/notifications/<int:notification_id>', methods=['GET'])
 def read_notification(notification_id):
-    db = next(get_db())
-    db_notification = get_notification(db, notification_id=notification_id)
-    if db_notification is None:
-        return jsonify({"detail": "Notification not found"}), 404
-    return jsonify(db_notification), 200
+    try:
+        connection = mysql.connector.connect(**db_config)
+        cursor = connection.cursor(dictionary=True)
+        cursor.execute("SELECT * FROM notifications WHERE notification_id = %s", (notification_id,))
+        notification = cursor.fetchone()
+        cursor.close()
+        connection.close()
+        if notification is None:
+            return jsonify({"detail": "Notification not found"}), 404
+        return jsonify(notification), 200
+    except mysql.connector.Error as err:
+        return jsonify({"detail": f"Error: {err}"}), 500
 
-# Create a standalone test app
-def create_test_app():
-    app = Flask(__name__)
-    app.register_blueprint(notification_bp)
-    return app
+# Create the Flask app and register the blueprint
+app = Flask(__name__)
+app.register_blueprint(notification_bp)
 
 if __name__ == '__main__':
-    app = create_test_app()
     app.run(debug=True)

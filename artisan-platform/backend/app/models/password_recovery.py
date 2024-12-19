@@ -26,3 +26,12 @@ class PasswordRecovery(Base):
 
     # Define relationships
     user = relationship("User", back_populates="password_recovery")
+    def to_dict(self):
+        return {
+            "recovery_id": self.recovery_id,
+            "user_id": self.user_id,
+            "reset_token": self.reset_token,
+            "created_at":self.created_at,
+            "expires_at": self.expires_at,
+            
+        }

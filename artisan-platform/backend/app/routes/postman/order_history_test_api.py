@@ -1,94 +1,80 @@
+import mysql.connector
 from flask import Blueprint, Flask, request, jsonify
+from datetime import datetime
 
 # Create a blueprint
 order_history_bp = Blueprint('order_history_bp', __name__)
 
-# Mock Schema and Database Session
-class OrderHistoryCreate:
-    def __init__(self, booking_id, customer_id, artisan_id, amount_paid, payment_status):
-        self.booking_id = booking_id
-        self.customer_id = customer_id
-        self.artisan_id = artisan_id
-        self.amount_paid = amount_paid
-        self.payment_status = payment_status
-
-# Mock Functions
-def create_order_history(db, order_history):
-    return {
-        "order_id": 1,
-        "booking_id": order_history.booking_id,
-        "customer_id": order_history.customer_id,
-        "artisan_id": order_history.artisan_id,
-        "amount_paid": order_history.amount_paid,
-        "payment_status": order_history.payment_status,
-        "transaction_date": "2024-12-01T15:30:00",
-    }
-
-def get_order_histories(db, skip, limit):
-    return [
-        {
-            "order_id": 1,
-            "booking_id": 1,
-            "customer_id": 1,
-            "artisan_id": 2,
-            "amount_paid": 100.0,
-            "payment_status": "completed",
-            "transaction_date": "2024-12-01T15:30:00",
-        }
-    ]
-
-def get_order_history(db, order_id):
-    if order_id == 1:
-        return {
-            "order_id": 1,
-            "booking_id": 1,
-            "customer_id": 1,
-            "artisan_id": 2,
-            "amount_paid": 100.0,
-            "payment_status": "completed",
-            "transaction_date": "2024-12-01T15:30:00",
-        }
-    return None
-
-# Mock Database Session
-class MockDB:
-    pass
-
-def get_db():
-    db = MockDB()
-    yield db
+# Update with your MySQL database configuration
+db_config = {
+    'user': 'Rana',
+    'password': 'Rana-555',
+    'host': 'localhost',
+    'database': 'Fanni_3lbab'
+}
 
 # Define Routes
-@order_history_bp.route('/order_histories', methods=['POST'])
-def create_new_order_history():
-    db = next(get_db())
-    order_history_data = request.get_json()
-    order_history = OrderHistoryCreate(**order_history_data)
-    new_order_history = create_order_history(db=db, order_history=order_history)
-    return jsonify(new_order_history), 201
+@order_history_bp.route('/order_history', methods=['POST'])
+def create_order_history():
+    order_history_data = request.json
+    try:
+        connection = mysql.connector.connect(**db_config)
+        cursor = connection.cursor()
+        cursor.execute(
+            """
+            INSERT INTO order_history (booking_id, customer_id, artisan_id, amount_paid, payment_status, transaction_date)
+            VALUES (%s, %s, %s, %s, %s, %s)
+            """,
+            (
+                order_history_data['booking_id'],
+                order_history_data['customer_id'],
+                order_history_data['artisan_id'],
+                order_history_data['amount_paid'],
+                order_history_data['payment_status'],
+                datetime.utcnow()  # Use current timestamp for created_at
+            )
+        )
+        connection.commit()
+        cursor.close()
+        connection.close()
+        return jsonify({"detail": "Order history created successfully"}), 201
+    except mysql.connector.Error as err:
+        return jsonify({"detail": f"Error: {err}"}), 500
 
-@order_history_bp.route('/order_histories', methods=['GET'])
+@order_history_bp.route('/order_history', methods=['GET'])
 def read_order_histories():
-    db = next(get_db())
     skip = int(request.args.get('skip', 0))
     limit = int(request.args.get('limit', 10))
-    order_histories = get_order_histories(db, skip=skip, limit=limit)
-    return jsonify(order_histories), 200
 
-@order_history_bp.route('/order_histories/<int:order_id>', methods=['GET'])
-def read_order_history(order_id):
-    db = next(get_db())
-    db_order_history = get_order_history(db, order_id=order_id)
-    if db_order_history is None:
-        return jsonify({"detail": "Order history not found"}), 404
-    return jsonify(db_order_history), 200
+    try:
+        connection = mysql.connector.connect(**db_config)
+        cursor = connection.cursor(dictionary=True)
+        cursor.execute("SELECT * FROM order_history LIMIT %s OFFSET %s", (limit, skip))
+        order_histories = cursor.fetchall()
+        cursor.close()
+        connection.close()
+        return jsonify(order_histories), 200
+    except mysql.connector.Error as err:
+        return jsonify({"detail": f"Error: {err}"}), 500
 
-# Create a standalone test app
-def create_test_app():
-    app = Flask(__name__)
-    app.register_blueprint(order_history_bp)
-    return app
+@order_history_bp.route('/order_history/<int:order_history_id>', methods=['GET'])
+def read_order_history(order_history_id):
+    try:
+        connection = mysql.connector.connect(**db_config)
+        cursor = connection.cursor(dictionary=True)
+        cursor.execute("SELECT * FROM order_history WHERE order_history_id = %s", (order_history_id,))
+        order_history = cursor.fetchone()
+        cursor.close()
+        connection.close()
+        if order_history is None:
+            return jsonify({"detail": "Order history not found"}), 404
+        return jsonify(order_history), 200
+    except mysql.connector.Error as err:
+        return jsonify({"detail": f"Error: {err}"}), 500
+
+# Create the Flask app and register the blueprint
+app = Flask(__name__)
+app.register_blueprint(order_history_bp)
 
 if __name__ == '__main__':
-    app = create_test_app()
     app.run(debug=True)

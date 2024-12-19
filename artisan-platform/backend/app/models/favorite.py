@@ -24,3 +24,13 @@ class Favorite(Base):
     # Relationships
     customer = relationship("User", foreign_keys=[customer_id])  # Relationship to the User model for the customer
     artisan = relationship("User", foreign_keys=[artisan_id])  # Relationship to the User model for the artisan
+    def to_dict(self):
+        return {
+            "favorite_id": self.favorite_id,
+            "customer_id": self.customer_id,
+            "artisan_id": self.artisan_id,
+            "created_at":self.created_at,
+
+  
+            
+        }

@@ -31,3 +31,16 @@ class Booking(Base):
     customer = relationship("User", back_populates="bookings", foreign_keys=[customer_id])
     artisan = relationship("User", foreign_keys=[artisan_id])
     service = relationship("Service", back_populates="bookings")
+    def to_dict(self):
+        return {
+            "booking_id": self.booking_id,
+            "customer_id": self.customer_id,
+            "service_id": self.service_id,
+            "artisan_id": self.artisan_id,
+            "booking_date": self.booking_date,
+            "status": self.status,
+            "created_at":self.created_at,
+
+  
+            
+        }

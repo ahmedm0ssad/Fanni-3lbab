@@ -1,60 +1,55 @@
-# Import necessary modules and functions from Flask, SQLAlchemy, and the application
+# Import necessary modules and functions
 from flask import Blueprint, request, jsonify
-from sqlalchemy.orm import Session
 from app.schemas.booking_schema import BookingCreate
-from app.services.booking_service import get_booking, get_bookings, create_booking
+from app.services.booking_service import (
+    get_booking,
+    get_bookings,
+    create_booking
+)
 from app.config.database import SessionLocal
 
-# Create a Blueprint for booking routes, which allows us to organize the routes for this module
+# Create a Blueprint for booking routes
 booking_bp = Blueprint('booking_bp', __name__)
 
-# Dependency to get the database session
-# This function provides a database session and ensures it is properly closed after use
+# Database session dependency
 def get_db():
+    """
+    Provides a new database session for each request.
+    """
     db = SessionLocal()
     try:
         yield db
     finally:
         db.close()
 
-# Route to create a new booking
-# This endpoint handles POST requests to create a new booking
 @booking_bp.route('/bookings', methods=['POST'])
 def create_new_booking():
-    # Get a database session
-    db = next(get_db())
-    # Parse the JSON request data into a BookingCreate schema object
+    """
+    Create a new booking.
+    """
     booking_data = request.get_json()
-    booking = BookingCreate(**booking_data)
-    # Call the service layer to create a new booking in the database
-    new_booking = create_booking(db=db, booking=booking)
-    # Return the newly created booking as a JSON response with a 201 status code
-    return jsonify(new_booking), 201
+    booking = BookingCreate(**booking_data)  # Parse request JSON into schema
+    with SessionLocal() as db:
+        new_booking = create_booking(db=db, booking=booking)  # Call service layer
+    return jsonify(new_booking.to_dict()), 201  
 
-# Route to read all bookings with pagination
-# This endpoint handles GET requests to retrieve a list of bookings with optional pagination
 @booking_bp.route('/bookings', methods=['GET'])
 def read_bookings():
-    # Get a database session
-    db = next(get_db())
-    # Get the 'skip' and 'limit' query parameters for pagination, with default values
+    """
+    Retrieve all bookings with optional pagination.
+    """
     skip = int(request.args.get('skip', 0))
     limit = int(request.args.get('limit', 10))
-    # Call the service layer to get a list of bookings from the database
-    bookings = get_bookings(db, skip=skip, limit=limit)
-    # Return the list of bookings as a JSON response with a 200 status code
-    return jsonify(bookings), 200
-
-# Route to read a specific booking by ID
-# This endpoint handles GET requests to retrieve a specific booking by its ID
+    with SessionLocal() as db:
+        bookings = get_bookings(db, skip=skip, limit=limit)  # Fetch bookings
+    return jsonify([booking.to_dict() for booking in bookings]), 200  
 @booking_bp.route('/bookings/<int:booking_id>', methods=['GET'])
 def read_booking(booking_id):
-    # Get a database session
-    db = next(get_db())
-    # Call the service layer to get the booking from the database by its ID
-    db_booking = get_booking(db, booking_id=booking_id)
-    # If the booking is not found, return a 404 error with a message
-    if db_booking is None:
-        return jsonify({"detail": "Booking not found"}), 404
-    # Return the booking as a JSON response with a 200 status code
-    return jsonify(db_booking), 200
+    """
+    Retrieve a specific booking by ID.
+    """
+    with SessionLocal() as db:
+        db_booking = get_booking(db, booking_id=booking_id)  # Fetch booking by ID
+        if db_booking is None:
+            return jsonify({"detail": "Booking not found"}), 404  # Handle not found
+    return jsonify(db_booking.to_dict()), 200 

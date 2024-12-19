@@ -31,3 +31,14 @@ class OrderHistory(Base):
     booking = relationship("Booking", back_populates="order_histories")
     customer = relationship("User", foreign_keys=[customer_id])
     artisan = relationship("User", foreign_keys=[artisan_id])
+    def to_dict(self):
+        return {
+            "order_id": self.order_id,
+            "booking_id": self.booking_id,
+            "customer_id": self.customer_id,
+            "artisan_id":self.artisan_id,
+            "amount_paid": self.amount_paid,
+            "payment_status": self.payment_status,
+            "transaction_date": self.transaction_date,
+            
+        }

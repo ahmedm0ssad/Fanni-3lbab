@@ -26,3 +26,13 @@ class Notification(Base):
 
     # Define relationships
     user = relationship("User", back_populates="notifications")
+    def to_dict(self):
+        return {
+            "notification_id": self.notification_id,
+            "user_id": self.user_id,
+            "message": self.message,
+            "is_read":self.is_read,
+            "created_at": self.created_at,
+  
+            
+        }

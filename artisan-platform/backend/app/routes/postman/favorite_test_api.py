@@ -1,82 +1,77 @@
+import mysql.connector
 from flask import Blueprint, Flask, request, jsonify
+from datetime import datetime
 
 # Create a blueprint
 favorite_bp = Blueprint('favorite_bp', __name__)
 
-# Mock Schema and Database Session
-class FavoriteCreate:
-    def __init__(self, customer_id, artisan_id):
-        self.customer_id = customer_id
-        self.artisan_id = artisan_id
-
-# Mock Functions
-def create_favorite(db, favorite):
-    return {
-        "favorite_id": 1,
-        "customer_id": favorite.customer_id,
-        "artisan_id": favorite.artisan_id,
-        "created_at": "2024-12-01T15:30:00",
-    }
-
-def get_favorites(db, skip, limit):
-    return [
-        {
-            "favorite_id": 1,
-            "customer_id": 1,
-            "artisan_id": 2,
-            "created_at": "2024-12-01T15:30:00",
-        }
-    ]
-
-def get_favorite(db, favorite_id):
-    if favorite_id == 1:
-        return {
-            "favorite_id": 1,
-            "customer_id": 1,
-            "artisan_id": 2,
-            "created_at": "2024-12-01T15:30:00",
-        }
-    return None
-
-# Mock Database Session
-class MockDB:
-    pass
-
-def get_db():
-    db = MockDB()
-    yield db
+# Update with your MySQL database configuration
+db_config = {
+    'user': 'Rana',
+    'password': 'Rana-555',
+    'host': 'localhost',
+    'database': 'Fanni_3lbab'
+}
 
 # Define Routes
 @favorite_bp.route('/favorites', methods=['POST'])
-def create_new_favorite():
-    db = next(get_db())
-    favorite_data = request.get_json()
-    favorite = FavoriteCreate(**favorite_data)
-    new_favorite = create_favorite(db=db, favorite=favorite)
-    return jsonify(new_favorite), 201
+def create_favorite():
+    favorite_data = request.json
+    try:
+        connection = mysql.connector.connect(**db_config)
+        cursor = connection.cursor()
+        cursor.execute(
+            """
+            INSERT INTO favorites (customer_id, artisan_id, created_at)
+            VALUES (%s, %s, %s)
+            """,
+            (
+                favorite_data['customer_id'],
+                favorite_data['artisan_id'],
+                datetime.utcnow()  # Use current timestamp for created_at
+            )
+        )
+        connection.commit()
+        cursor.close()
+        connection.close()
+        return jsonify({"detail": "Favorite created successfully"}), 201
+    except mysql.connector.Error as err:
+        return jsonify({"detail": f"Error: {err}"}), 500
 
 @favorite_bp.route('/favorites', methods=['GET'])
 def read_favorites():
-    db = next(get_db())
     skip = int(request.args.get('skip', 0))
     limit = int(request.args.get('limit', 10))
-    favorites = get_favorites(db, skip=skip, limit=limit)
-    return jsonify(favorites), 200
+
+    try:
+        connection = mysql.connector.connect(**db_config)
+        cursor = connection.cursor(dictionary=True)
+        cursor.execute("SELECT * FROM favorites LIMIT %s OFFSET %s", (limit, skip))
+        favorites = cursor.fetchall()
+        cursor.close()
+        connection.close()
+        return jsonify(favorites), 200
+    except mysql.connector.Error as err:
+        return jsonify({"detail": f"Error: {err}"}), 500
 
 @favorite_bp.route('/favorites/<int:favorite_id>', methods=['GET'])
 def read_favorite(favorite_id):
-    db = next(get_db())
-    db_favorite = get_favorite(db, favorite_id=favorite_id)
-    if db_favorite is None:
-        return jsonify({"detail": "Favorite not found"}), 404
-    return jsonify(db_favorite), 200
+    try:
+        connection = mysql.connector.connect(**db_config)
+        cursor = connection.cursor(dictionary=True)
+        cursor.execute("SELECT * FROM favorites WHERE favorite_id = %s", (favorite_id,))
+        favorite = cursor.fetchone()
+        cursor.close()
+        connection.close()
+        if favorite is None:
+            return jsonify({"detail": "Favorite not found"}), 404
+        return jsonify(favorite), 200
+    except mysql.connector.Error as err:
+        return jsonify({"detail": f"Error: {err}"}), 500
 
-# Create a standalone test app
-def create_test_app():
-    app = Flask(__name__)
-    app.register_blueprint(favorite_bp)
-    return app
+# Create the Flask app and register the blueprint
+app = Flask(__name__)
+app.register_blueprint(favorite_bp)
 
 if __name__ == '__main__':
-    app = create_test_app()
     app.run(debug=True)

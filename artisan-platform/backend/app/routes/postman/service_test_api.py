@@ -1,5 +1,6 @@
 import mysql.connector
 from flask import Blueprint, Flask, request, jsonify
+from datetime import datetime
 
 # Create a blueprint
 service_bp = Blueprint('service_bp', __name__)
@@ -30,8 +31,8 @@ def create_new_service():
                 service_data['description'],
                 service_data['price'],
                 service_data['category'],
-                service_data['created_at'],
-                service_data['updated_at']
+                datetime.utcnow(),  # Use current timestamp for created_at
+                datetime.utcnow()   # Use current timestamp for updated_at
             )
         )
         connection.commit()
@@ -72,12 +73,9 @@ def read_service(service_id):
     except mysql.connector.Error as err:
         return jsonify({"detail": f"Error: {err}"}), 500
 
-# Create a standalone test app
-def create_test_app():
-    app = Flask(__name__)
-    app.register_blueprint(service_bp)
-    return app
+# Create the Flask app and register the blueprint
+app = Flask(__name__)
+app.register_blueprint(service_bp)
 
 if __name__ == '__main__':
-    app = create_test_app()
     app.run(debug=True)

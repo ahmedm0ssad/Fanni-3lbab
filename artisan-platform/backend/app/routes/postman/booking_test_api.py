@@ -1,90 +1,80 @@
+import mysql.connector
 from flask import Blueprint, Flask, request, jsonify
+from datetime import datetime
 
 # Create a blueprint
 booking_bp = Blueprint('booking_bp', __name__)
 
-# Mock Schema and Database Session
-class BookingCreate:
-    def __init__(self, customer_id, service_id, artisan_id, booking_date):
-        self.customer_id = customer_id
-        self.service_id = service_id
-        self.artisan_id = artisan_id
-        self.booking_date = booking_date
-
-# Mock Functions
-def create_booking(db, booking):
-    return {
-        "booking_id": 1,
-        "customer_id": booking.customer_id,
-        "service_id": booking.service_id,
-        "artisan_id": booking.artisan_id,
-        "booking_date": booking.booking_date,
-        "status": "pending",
-    }
-
-def get_bookings(db, skip, limit):
-    return [
-        {
-            "booking_id": 1,
-            "customer_id": 1,
-            "service_id": 2,
-            "artisan_id": 3,
-            "booking_date": "2024-12-01T15:30:00",
-            "status": "confirmed",
-        }
-    ]
-
-def get_booking(db, booking_id):
-    if booking_id == 1:
-        return {
-            "booking_id": 1,
-            "customer_id": 1,
-            "service_id": 2,
-            "artisan_id": 3,
-            "booking_date": "2024-12-01T15:30:00",
-            "status": "confirmed",
-        }
-    return None
-
-# Mock Database Session
-class MockDB:
-    pass
-
-def get_db():
-    db = MockDB()
-    yield db
+# Update with your MySQL database configuration
+db_config = {
+    'user': 'Rana',
+    'password': 'Rana-555',
+    'host': 'localhost',
+    'database': 'Fanni_3lbab'
+}
 
 # Define Routes
 @booking_bp.route('/bookings', methods=['POST'])
-def create_new_booking():
-    db = next(get_db())
-    booking_data = request.get_json()
-    booking = BookingCreate(**booking_data)
-    new_booking = create_booking(db=db, booking=booking)
-    return jsonify(new_booking), 201
+def create_booking():
+    booking_data = request.json
+    try:
+        connection = mysql.connector.connect(**db_config)
+        cursor = connection.cursor()
+        cursor.execute(
+            """
+            INSERT INTO bookings (customer_id, service_id, artisan_id, booking_date, status, created_at)
+            VALUES (%s, %s, %s, %s, %s, %s)
+            """,
+            (
+                booking_data['customer_id'],
+                booking_data['service_id'],
+                booking_data['artisan_id'],
+                booking_data['booking_date'],
+                booking_data.get('status', 'pending'),
+                datetime.utcnow()  # Use current timestamp for created_at
+            )
+        )
+        connection.commit()
+        cursor.close()
+        connection.close()
+        return jsonify({"detail": "Booking created successfully"}), 201
+    except mysql.connector.Error as err:
+        return jsonify({"detail": f"Error: {err}"}), 500
 
 @booking_bp.route('/bookings', methods=['GET'])
 def read_bookings():
-    db = next(get_db())
     skip = int(request.args.get('skip', 0))
     limit = int(request.args.get('limit', 10))
-    bookings = get_bookings(db, skip=skip, limit=limit)
-    return jsonify(bookings), 200
+
+    try:
+        connection = mysql.connector.connect(**db_config)
+        cursor = connection.cursor(dictionary=True)
+        cursor.execute("SELECT * FROM bookings LIMIT %s OFFSET %s", (limit, skip))
+        bookings = cursor.fetchall()
+        cursor.close()
+        connection.close()
+        return jsonify(bookings), 200
+    except mysql.connector.Error as err:
+        return jsonify({"detail": f"Error: {err}"}), 500
 
 @booking_bp.route('/bookings/<int:booking_id>', methods=['GET'])
 def read_booking(booking_id):
-    db = next(get_db())
-    db_booking = get_booking(db, booking_id=booking_id)
-    if db_booking is None:
-        return jsonify({"detail": "Booking not found"}), 404
-    return jsonify(db_booking), 200
+    try:
+        connection = mysql.connector.connect(**db_config)
+        cursor = connection.cursor(dictionary=True)
+        cursor.execute("SELECT * FROM bookings WHERE booking_id = %s", (booking_id,))
+        booking = cursor.fetchone()
+        cursor.close()
+        connection.close()
+        if booking is None:
+            return jsonify({"detail": "Booking not found"}), 404
+        return jsonify(booking), 200
+    except mysql.connector.Error as err:
+        return jsonify({"detail": f"Error: {err}"}), 500
 
-# Create a standalone test app
-def create_test_app():
-    app = Flask(__name__)
-    app.register_blueprint(booking_bp)
-    return app
+# Create the Flask app and register the blueprint
+app = Flask(__name__)
+app.register_blueprint(booking_bp)
 
 if __name__ == '__main__':
-    app = create_test_app()
     app.run(debug=True)

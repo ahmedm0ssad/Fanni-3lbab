@@ -26,3 +26,13 @@ class Portfolio(Base):
 
     # Define relationships
     artisan = relationship("User", back_populates="portfolios")
+
+    def to_dict(self):
+        return {
+            "portfolio_id": self.portfolio_id,
+            "artisan_id": self.artisan_id,
+            "image_url": self.image_url,
+            "description":self.description,
+            "created_at": self.created_at,
+            
+        }

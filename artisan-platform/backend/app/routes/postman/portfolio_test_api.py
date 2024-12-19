@@ -1,86 +1,78 @@
+import mysql.connector
 from flask import Blueprint, Flask, request, jsonify
+from datetime import datetime
 
 # Create a blueprint
 portfolio_bp = Blueprint('portfolio_bp', __name__)
 
-# Mock Schema and Database Session
-class PortfolioCreate:
-    def __init__(self, artisan_id, image_url, description=None):
-        self.artisan_id = artisan_id
-        self.image_url = image_url
-        self.description = description
-
-# Mock Functions
-def create_portfolio(db, portfolio):
-    return {
-        "portfolio_id": 1,
-        "artisan_id": portfolio.artisan_id,
-        "image_url": portfolio.image_url,
-        "description": portfolio.description,
-        "created_at": "2024-12-01T15:30:00",
-    }
-
-def get_portfolios(db, skip, limit):
-    return [
-        {
-            "portfolio_id": 1,
-            "artisan_id": 1,
-            "image_url": "http://example.com/image.jpg",
-            "description": "Sample portfolio",
-            "created_at": "2024-12-01T15:30:00",
-        }
-    ]
-
-def get_portfolio(db, portfolio_id):
-    if portfolio_id == 1:
-        return {
-            "portfolio_id": 1,
-            "artisan_id": 1,
-            "image_url": "http://example.com/image.jpg",
-            "description": "Sample portfolio",
-            "created_at": "2024-12-01T15:30:00",
-        }
-    return None
-
-# Mock Database Session
-class MockDB:
-    pass
-
-def get_db():
-    db = MockDB()
-    yield db
+# Update with your MySQL database configuration
+db_config = {
+    'user': 'Rana',
+    'password': 'Rana-555',
+    'host': 'localhost',
+    'database': 'Fanni_3lbab'
+}
 
 # Define Routes
 @portfolio_bp.route('/portfolios', methods=['POST'])
 def create_new_portfolio():
-    db = next(get_db())
-    portfolio_data = request.get_json()
-    portfolio = PortfolioCreate(**portfolio_data)
-    new_portfolio = create_portfolio(db=db, portfolio=portfolio)
-    return jsonify(new_portfolio), 201
+    portfolio_data = request.json
+    try:
+        connection = mysql.connector.connect(**db_config)
+        cursor = connection.cursor()
+        cursor.execute(
+            """
+            INSERT INTO portfolios (artisan_id, image_url, description, created_at)
+            VALUES (%s, %s, %s, %s)
+            """,
+            (
+                portfolio_data['artisan_id'],
+                portfolio_data['image_url'],
+                portfolio_data['description'],
+                datetime.utcnow()  # Use current timestamp for created_at
+            )
+        )
+        connection.commit()
+        cursor.close()
+        connection.close()
+        return jsonify({"detail": "Portfolio created successfully"}), 201
+    except mysql.connector.Error as err:
+        return jsonify({"detail": f"Error: {err}"}), 500
 
 @portfolio_bp.route('/portfolios', methods=['GET'])
 def read_portfolios():
-    db = next(get_db())
     skip = int(request.args.get('skip', 0))
     limit = int(request.args.get('limit', 10))
-    portfolios = get_portfolios(db, skip=skip, limit=limit)
-    return jsonify(portfolios), 200
+
+    try:
+        connection = mysql.connector.connect(**db_config)
+        cursor = connection.cursor(dictionary=True)
+        cursor.execute("SELECT * FROM portfolios LIMIT %s OFFSET %s", (limit, skip))
+        portfolios = cursor.fetchall()
+        cursor.close()
+        connection.close()
+        return jsonify(portfolios), 200
+    except mysql.connector.Error as err:
+        return jsonify({"detail": f"Error: {err}"}), 500
 
 @portfolio_bp.route('/portfolios/<int:portfolio_id>', methods=['GET'])
 def read_portfolio(portfolio_id):
-    db = next(get_db())
-    db_portfolio = get_portfolio(db, portfolio_id=portfolio_id)
-    if db_portfolio is None:
-        return jsonify({"detail": "Portfolio not found"}), 404
-    return jsonify(db_portfolio), 200
+    try:
+        connection = mysql.connector.connect(**db_config)
+        cursor = connection.cursor(dictionary=True)
+        cursor.execute("SELECT * FROM portfolios WHERE portfolio_id = %s", (portfolio_id,))
+        portfolio = cursor.fetchone()
+        cursor.close()
+        connection.close()
+        if portfolio is None:
+            return jsonify({"detail": "Portfolio not found"}), 404
+        return jsonify(portfolio), 200
+    except mysql.connector.Error as err:
+        return jsonify({"detail": f"Error: {err}"}), 500
 
-# Create a standalone test app
-def create_test_app():
-    app = Flask(__name__)
-    app.register_blueprint(portfolio_bp)
-    return app
+# Create the Flask app and register the blueprint
+app = Flask(__name__)
+app.register_blueprint(portfolio_bp)
 
 if __name__ == '__main__':
-    app = create_test_app()
     app.run(debug=True)
