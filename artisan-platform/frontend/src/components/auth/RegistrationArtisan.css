@@ -12,14 +12,6 @@ body {
   text-align: center;
 }
 
-.login-container {
-  font-family: Arial, sans-serif;
-  background-color: #f0f0f5;
-  margin: 0;
-  padding: 0;
-  min-height: 100vh;
-}
-
 .container {
   max-width: 400px;
   margin: 50px auto;
@@ -40,7 +32,7 @@ form {
   gap: 15px;
 }
 
-input {
+input, select {
   padding: 10px;
   font-size: 16px;
   border: 1px solid #ccc;
@@ -86,16 +78,4 @@ button:hover {
 
 .facebook-btn:hover {
   background-color: #145dbd;
-}
-
-.artisan-login-link {
-  display: block;
-  margin-top: 10px;
-  text-align: right; /* يمكنك تغييره إلى left إذا كنت تريده في اليسار */
-  color: #6a0dad;
-  text-decoration: none;
-}
-
-.artisan-login-link:hover {
-  text-decoration: underline;
 }

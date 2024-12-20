@@ -51,7 +51,6 @@ const Header = ({ navigate }) => (
   <header className="header">
     <h2 className="title">فني ع الباب</h2>
     <div className="header-buttons">
-      <button className="register-button" onClick={() => navigate('/registration')}>التسجيل</button>
       <button className="login-button" onClick={() => navigate('/login')}>تسجيل الدخول</button>
       <button className="favorites-button" onClick={() => navigate('/favorites')}>المفضلة</button>
       <button className="search-button" onClick={() => navigate('/search')}>بحث عن خدمة</button>
