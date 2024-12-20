@@ -20,7 +20,7 @@ class PasswordRecovery(Base):
     # Define columns
     recovery_id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(Integer, ForeignKey('users.user_id'), nullable=False)
-    reset_token = Column(String, nullable=False)
+    reset_token = Column(String(255), nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     expires_at = Column(DateTime, nullable=False)
 

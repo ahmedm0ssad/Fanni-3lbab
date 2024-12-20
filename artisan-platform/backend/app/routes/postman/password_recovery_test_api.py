@@ -1,24 +1,23 @@
-import mysql.connector
+import sys
+import os
 from flask import Blueprint, Flask, request, jsonify
 from datetime import datetime
+import mysql.connector
+
+# Add the root directory of your project to the Python path
+sys.path.append(os.path.dirname(os.path.abspath(__file__)) + '/../../../../')
+
+from app.config.database import get_db_connection
 
 # Create a blueprint
 password_recovery_bp = Blueprint('password_recovery_bp', __name__)
-
-# Update with your MySQL database configuration
-db_config = {
-    'user': 'Rana',
-    'password': 'Rana-555',
-    'host': 'localhost',
-    'database': 'Fanni_3lbab'
-}
 
 # Define Routes
 @password_recovery_bp.route('/password_recovery', methods=['POST'])
 def create_password_recovery():
     password_recovery_data = request.json
     try:
-        connection = mysql.connector.connect(**db_config)
+        connection = get_db_connection()
         cursor = connection.cursor()
         cursor.execute(
             """
@@ -39,32 +38,17 @@ def create_password_recovery():
         return jsonify({"detail": f"Error: {err}"}), 500
 
 @password_recovery_bp.route('/password_recovery', methods=['GET'])
-def read_password_recoveries():
+def read_password_recovery():
     skip = int(request.args.get('skip', 0))
     limit = int(request.args.get('limit', 10))
 
     try:
-        connection = mysql.connector.connect(**db_config)
+        connection = get_db_connection()
         cursor = connection.cursor(dictionary=True)
         cursor.execute("SELECT * FROM password_recovery LIMIT %s OFFSET %s", (limit, skip))
-        password_recoveries = cursor.fetchall()
+        password_recovery = cursor.fetchall()
         cursor.close()
         connection.close()
-        return jsonify(password_recoveries), 200
-    except mysql.connector.Error as err:
-        return jsonify({"detail": f"Error: {err}"}), 500
-
-@password_recovery_bp.route('/password_recovery/<int:recovery_id>', methods=['GET'])
-def read_password_recovery(recovery_id):
-    try:
-        connection = mysql.connector.connect(**db_config)
-        cursor = connection.cursor(dictionary=True)
-        cursor.execute("SELECT * FROM password_recovery WHERE recovery_id = %s", (recovery_id,))
-        password_recovery = cursor.fetchone()
-        cursor.close()
-        connection.close()
-        if password_recovery is None:
-            return jsonify({"detail": "Password recovery not found"}), 404
         return jsonify(password_recovery), 200
     except mysql.connector.Error as err:
         return jsonify({"detail": f"Error: {err}"}), 500

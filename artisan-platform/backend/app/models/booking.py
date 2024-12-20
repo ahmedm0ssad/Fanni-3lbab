@@ -24,7 +24,7 @@ class Booking(Base):
     service_id = Column(Integer, ForeignKey('services.service_id'), nullable=False)
     artisan_id = Column(Integer, ForeignKey('users.user_id'), nullable=False)
     booking_date = Column(DateTime, nullable=False)
-    status = Column(String, nullable=False, default='pending')  # pending, confirmed, completed, canceled
+    status = Column(String(255), nullable=False, default='pending')  # pending, confirmed, completed, canceled
     created_at = Column(DateTime, default=datetime.utcnow)
 
     # Relationships

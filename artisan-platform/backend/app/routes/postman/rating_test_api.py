@@ -1,24 +1,23 @@
-import mysql.connector
+import sys
+import os
 from flask import Blueprint, Flask, request, jsonify
 from datetime import datetime
+import mysql.connector
+
+# Add the root directory of your project to the Python path
+sys.path.append(os.path.dirname(os.path.abspath(__file__)) + '/../../../../')
+
+from app.config.database import get_db_connection
 
 # Create a blueprint
 rating_bp = Blueprint('rating_bp', __name__)
-
-# Update with your MySQL database configuration
-db_config = {
-    'user': 'Rana',
-    'password': 'Rana-555',
-    'host': 'localhost',
-    'database': 'Fanni_3lbab'
-}
 
 # Define Routes
 @rating_bp.route('/ratings', methods=['POST'])
 def create_new_rating():
     rating_data = request.json
     try:
-        connection = mysql.connector.connect(**db_config)
+        connection = get_db_connection()
         cursor = connection.cursor()
         cursor.execute(
             """
@@ -46,28 +45,13 @@ def read_ratings():
     limit = int(request.args.get('limit', 10))
 
     try:
-        connection = mysql.connector.connect(**db_config)
+        connection = get_db_connection()
         cursor = connection.cursor(dictionary=True)
         cursor.execute("SELECT * FROM ratings_and_reviews LIMIT %s OFFSET %s", (limit, skip))
         ratings = cursor.fetchall()
         cursor.close()
         connection.close()
         return jsonify(ratings), 200
-    except mysql.connector.Error as err:
-        return jsonify({"detail": f"Error: {err}"}), 500
-
-@rating_bp.route('/ratings/<int:rating_id>', methods=['GET'])
-def read_rating(rating_id):
-    try:
-        connection = mysql.connector.connect(**db_config)
-        cursor = connection.cursor(dictionary=True)
-        cursor.execute("SELECT * FROM ratings_and_reviews WHERE rating_id = %s", (rating_id,))
-        rating = cursor.fetchone()
-        cursor.close()
-        connection.close()
-        if rating is None:
-            return jsonify({"detail": "Rating not found"}), 404
-        return jsonify(rating), 200
     except mysql.connector.Error as err:
         return jsonify({"detail": f"Error: {err}"}), 500
 

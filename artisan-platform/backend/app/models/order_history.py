@@ -24,7 +24,7 @@ class OrderHistory(Base):
     customer_id = Column(Integer, ForeignKey("users.user_id"))
     artisan_id = Column(Integer, ForeignKey("users.user_id"))
     amount_paid = Column(DECIMAL)
-    payment_status = Column(String)
+    payment_status = Column(String(255))
     transaction_date = Column(DateTime)
 
     # Define relationships

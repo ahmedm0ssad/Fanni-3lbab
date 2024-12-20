@@ -1,38 +1,32 @@
-import mysql.connector
+import sys
+import os
 from flask import Blueprint, Flask, request, jsonify
-from datetime import datetime
+import mysql.connector
+
+# Add the root directory of your project to the Python path
+sys.path.append(os.path.dirname(os.path.abspath(__file__)) + '/../../../../')
+
+from app.config.database import get_db_connection
 
 # Create a blueprint
 service_bp = Blueprint('service_bp', __name__)
 
-# Update with your MySQL database configuration
-db_config = {
-    'user': 'Rana',
-    'password': 'Rana-555',
-    'host': 'localhost',
-    'database': 'Fanni_3lbab'
-}
-
 # Define Routes
 @service_bp.route('/services', methods=['POST'])
-def create_new_service():
+def create_service():
     service_data = request.json
     try:
-        connection = mysql.connector.connect(**db_config)
+        connection = get_db_connection()
         cursor = connection.cursor()
         cursor.execute(
             """
-            INSERT INTO services (artisan_id, service_name, description, price, category, created_at, updated_at)
-            VALUES (%s, %s, %s, %s, %s, %s, %s)
+            INSERT INTO services (name, description, price)
+            VALUES (%s, %s, %s)
             """,
             (
-                service_data['artisan_id'],
-                service_data['service_name'],
+                service_data['name'],
                 service_data['description'],
-                service_data['price'],
-                service_data['category'],
-                datetime.utcnow(),  # Use current timestamp for created_at
-                datetime.utcnow()   # Use current timestamp for updated_at
+                service_data['price']
             )
         )
         connection.commit()
@@ -44,32 +38,14 @@ def create_new_service():
 
 @service_bp.route('/services', methods=['GET'])
 def read_services():
-    skip = int(request.args.get('skip', 0))
-    limit = int(request.args.get('limit', 10))
-
     try:
-        connection = mysql.connector.connect(**db_config)
+        connection = get_db_connection()
         cursor = connection.cursor(dictionary=True)
-        cursor.execute("SELECT * FROM services LIMIT %s OFFSET %s", (limit, skip))
+        cursor.execute("SELECT * FROM services")
         services = cursor.fetchall()
         cursor.close()
         connection.close()
         return jsonify(services), 200
-    except mysql.connector.Error as err:
-        return jsonify({"detail": f"Error: {err}"}), 500
-
-@service_bp.route('/services/<int:service_id>', methods=['GET'])
-def read_service(service_id):
-    try:
-        connection = mysql.connector.connect(**db_config)
-        cursor = connection.cursor(dictionary=True)
-        cursor.execute("SELECT * FROM services WHERE service_id = %s", (service_id,))
-        service = cursor.fetchone()
-        cursor.close()
-        connection.close()
-        if service is None:
-            return jsonify({"detail": "Service not found"}), 404
-        return jsonify(service), 200
     except mysql.connector.Error as err:
         return jsonify({"detail": f"Error: {err}"}), 500
 

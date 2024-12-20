@@ -1,24 +1,23 @@
-import mysql.connector
+import sys
+import os
 from flask import Blueprint, Flask, request, jsonify
 from datetime import datetime
+import mysql.connector
+
+# Add the root directory of your project to the Python path
+sys.path.append(os.path.dirname(os.path.abspath(__file__)) + '/../../../../')
+
+from app.config.database import get_db_connection
 
 # Create a blueprint
 order_history_bp = Blueprint('order_history_bp', __name__)
-
-# Update with your MySQL database configuration
-db_config = {
-    'user': 'Rana',
-    'password': 'Rana-555',
-    'host': 'localhost',
-    'database': 'Fanni_3lbab'
-}
 
 # Define Routes
 @order_history_bp.route('/order_history', methods=['POST'])
 def create_order_history():
     order_history_data = request.json
     try:
-        connection = mysql.connector.connect(**db_config)
+        connection = get_db_connection()
         cursor = connection.cursor()
         cursor.execute(
             """
@@ -31,7 +30,7 @@ def create_order_history():
                 order_history_data['artisan_id'],
                 order_history_data['amount_paid'],
                 order_history_data['payment_status'],
-                datetime.utcnow()  # Use current timestamp for created_at
+                datetime.utcnow()  # Use current timestamp for transaction_date
             )
         )
         connection.commit()
@@ -47,7 +46,7 @@ def read_order_histories():
     limit = int(request.args.get('limit', 10))
 
     try:
-        connection = mysql.connector.connect(**db_config)
+        connection = get_db_connection()
         cursor = connection.cursor(dictionary=True)
         cursor.execute("SELECT * FROM order_history LIMIT %s OFFSET %s", (limit, skip))
         order_histories = cursor.fetchall()
@@ -60,7 +59,7 @@ def read_order_histories():
 @order_history_bp.route('/order_history/<int:order_history_id>', methods=['GET'])
 def read_order_history(order_history_id):
     try:
-        connection = mysql.connector.connect(**db_config)
+        connection = get_db_connection()
         cursor = connection.cursor(dictionary=True)
         cursor.execute("SELECT * FROM order_history WHERE order_history_id = %s", (order_history_id,))
         order_history = cursor.fetchone()

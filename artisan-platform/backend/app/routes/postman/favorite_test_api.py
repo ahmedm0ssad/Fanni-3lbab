@@ -1,24 +1,23 @@
-import mysql.connector
+import sys
+import os
 from flask import Blueprint, Flask, request, jsonify
 from datetime import datetime
+import mysql.connector
+
+# Add the root directory of your project to the Python path
+sys.path.append(os.path.dirname(os.path.abspath(__file__)) + '/../../../../')
+
+from app.config.database import get_db_connection
 
 # Create a blueprint
 favorite_bp = Blueprint('favorite_bp', __name__)
-
-# Update with your MySQL database configuration
-db_config = {
-    'user': 'Rana',
-    'password': 'Rana-555',
-    'host': 'localhost',
-    'database': 'Fanni_3lbab'
-}
 
 # Define Routes
 @favorite_bp.route('/favorites', methods=['POST'])
 def create_favorite():
     favorite_data = request.json
     try:
-        connection = mysql.connector.connect(**db_config)
+        connection = get_db_connection()
         cursor = connection.cursor()
         cursor.execute(
             """
@@ -44,28 +43,13 @@ def read_favorites():
     limit = int(request.args.get('limit', 10))
 
     try:
-        connection = mysql.connector.connect(**db_config)
+        connection = get_db_connection()
         cursor = connection.cursor(dictionary=True)
         cursor.execute("SELECT * FROM favorites LIMIT %s OFFSET %s", (limit, skip))
         favorites = cursor.fetchall()
         cursor.close()
         connection.close()
         return jsonify(favorites), 200
-    except mysql.connector.Error as err:
-        return jsonify({"detail": f"Error: {err}"}), 500
-
-@favorite_bp.route('/favorites/<int:favorite_id>', methods=['GET'])
-def read_favorite(favorite_id):
-    try:
-        connection = mysql.connector.connect(**db_config)
-        cursor = connection.cursor(dictionary=True)
-        cursor.execute("SELECT * FROM favorites WHERE favorite_id = %s", (favorite_id,))
-        favorite = cursor.fetchone()
-        cursor.close()
-        connection.close()
-        if favorite is None:
-            return jsonify({"detail": "Favorite not found"}), 404
-        return jsonify(favorite), 200
     except mysql.connector.Error as err:
         return jsonify({"detail": f"Error: {err}"}), 500
 

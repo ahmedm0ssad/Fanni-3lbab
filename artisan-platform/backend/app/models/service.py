@@ -23,10 +23,10 @@ class Service(Base):
     # Define columns
     service_id = Column(Integer, primary_key=True, autoincrement=True)
     artisan_id = Column(Integer, ForeignKey('users.user_id'), nullable=False)
-    service_name = Column(String, nullable=False)
+    service_name = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
     price = Column(Float, nullable=False)
-    category = Column(String, nullable=False)
+    category = Column(String(255), nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

@@ -23,12 +23,12 @@ class User(Base):
 
     # Define columns
     user_id = Column(Integer, primary_key=True, autoincrement=True)
-    name = Column(String, nullable=False)
-    email = Column(String, unique=True, nullable=False)
-    password_hash = Column(String, nullable=False)
-    phone = Column(String, nullable=True)
-    address = Column(String, nullable=True)
-    user_type = Column(String, nullable=False)  # 'customer', 'artisan', 'admin'
+    name = Column(String(255), nullable=False)  # Specify length for VARCHAR
+    email = Column(String(255), unique=True, nullable=False)  # Specify length for VARCHAR
+    password_hash = Column(String(255), nullable=False)  # Specify length for VARCHAR
+    phone = Column(String(255), nullable=True)  # Specify length for VARCHAR
+    address = Column(String(255), nullable=True)  # Specify length for VARCHAR
+    user_type = Column(String(255), nullable=False)  # Specify length for VARCHAR
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -72,6 +72,5 @@ class Admin(User):
     def to_dict(self):
             return {
                 "admin_id": self.admin_id,
-            
             }
 

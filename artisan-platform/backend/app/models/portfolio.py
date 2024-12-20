@@ -20,7 +20,7 @@ class Portfolio(Base):
     # Define columns
     portfolio_id = Column(Integer, primary_key=True, autoincrement=True)
     artisan_id = Column(Integer, ForeignKey('users.user_id'), nullable=False)
-    image_url = Column(String, nullable=False)
+    image_url = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
