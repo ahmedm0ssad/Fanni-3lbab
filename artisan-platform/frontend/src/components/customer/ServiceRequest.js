@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import "./ServiceRequest.css";
 
 const ServiceRequest = () => {
@@ -8,6 +9,7 @@ const ServiceRequest = () => {
     service: "",
     description: "",
   });
+  const navigate = useNavigate();
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -18,6 +20,21 @@ const ServiceRequest = () => {
     e.preventDefault();
     // هنا يمكنك إضافة منطق إرسال البيانات إلى الخادم
     alert("تم إرسال طلب الخدمة بنجاح!");
+
+    // إرسال إشعار للفني
+    fetch('/api/notifications', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        user_id: 1, // معرف الفني
+        message: `طلب خدمة جديد: ${formData.service}`,
+        is_read: false,
+      }),
+    });
+
+    navigate('/search'); // توجيه المستخدم إلى صفحة البحث بعد تقديم الطلب بنجاح
   };
 
   return (

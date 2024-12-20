@@ -60,42 +60,14 @@ button:hover {
   background-color: #5b0ca6;
 }
 
-.divider {
-  text-align: center;
-  color: gray;
-  margin: 10px 0;
-}
-
-.third-party-btns {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.google-btn {
-  background-color: #db4437;
-}
-
-.facebook-btn {
-  background-color: #1877f2;
-}
-
-.google-btn:hover {
-  background-color: #c33c2f;
-}
-
-.facebook-btn:hover {
-  background-color: #145dbd;
-}
-
-.artisan-login-link {
+.register-link {
   display: block;
   margin-top: 10px;
-  text-align: right; /* يمكنك تغييره إلى left إذا كنت تريده في اليسار */
+  text-align: center;
   color: #6a0dad;
   text-decoration: none;
 }
 
-.artisan-login-link:hover {
+.register-link:hover {
   text-decoration: underline;
 }
